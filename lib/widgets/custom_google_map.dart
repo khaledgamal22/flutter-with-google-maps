@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_with_google_maps/functions/resize_marker_icon.dart';
 import 'package:flutter_with_google_maps/models/place_model.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
@@ -68,11 +69,9 @@ class _CustomGoogleMapState extends State<CustomGoogleMap> {
   }
 
   void initMarkers() async {
-    var customMarkerIcon = await BitmapDescriptor.asset(
-        const ImageConfiguration(
-          size: Size(35, 35),
-        ),
-        'assets/images/newMarker.jpg');
+    var customMarkerIcon = BitmapDescriptor.bytes(
+      await resizeMarkerIcon("assets/images/newMarker.jpg", 70),
+    );
     var markersPlaces = places.map((place) {
       return Marker(
         icon: customMarkerIcon,
