@@ -67,14 +67,22 @@ class _CustomGoogleMapState extends State<CustomGoogleMap> {
     );
   }
 
-  void initMarkers() {
+  void initMarkers() async {
+    var customMarkerIcon = await BitmapDescriptor.asset(
+        const ImageConfiguration(
+          size: Size(35, 35),
+        ),
+        'assets/images/newMarker.jpg');
     var markersPlaces = places.map((place) {
       return Marker(
+        icon: customMarkerIcon,
         markerId: MarkerId(place.id.toString()),
         position: place.latLng,
         infoWindow: InfoWindow(title: place.name),
       );
     }).toSet();
     markers.addAll(markersPlaces);
+    // because custom icon take time the map is loaded before the icon is ready , we need to call setState to refresh the map
+    setState(() {});
   }
 }
