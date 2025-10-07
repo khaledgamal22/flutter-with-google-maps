@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_with_google_maps/functions/resize_marker_icon.dart';
-import 'package:flutter_with_google_maps/models/place_model.dart';
+import 'package:flutter_with_google_maps/utils/location_service.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:location/location.dart';
 
 class CustomGoogleMap extends StatefulWidget {
   const CustomGoogleMap({super.key});
@@ -12,14 +12,18 @@ class CustomGoogleMap extends StatefulWidget {
 
 class _CustomGoogleMapState extends State<CustomGoogleMap> {
   late CameraPosition initialCameraPosition;
-  late GoogleMapController googleMapController;
+  GoogleMapController? googleMapController;
+  late LocationService locationService;
   String? mapStyle;
+  Set<Marker> markers = {};
+  bool isFirstCall = true;
   @override
   void initState() {
     initialCameraPosition = const CameraPosition(
-        target: LatLng(31.212848665725318, 29.91916361124228), zoom: 12);
+        target: LatLng(31.212848665725318, 29.91916361124228), zoom: 1);
     initMapStyle();
-    initMarkers();
+    locationService = LocationService();
+    updateMyLocation();
     super.initState();
   }
 
@@ -29,59 +33,57 @@ class _CustomGoogleMapState extends State<CustomGoogleMap> {
     setState(() {});
   }
 
-  Set<Marker> markers = {};
-
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        GoogleMap(
-          markers: markers,
-          style: mapStyle,
-          onMapCreated: (controller) {
-            googleMapController = controller;
-          },
-          initialCameraPosition: initialCameraPosition,
-          // cameraTargetBounds: CameraTargetBounds(
-          //   LatLngBounds(
-          //     southwest: const LatLng(30.840388981857377, 29.396626376536762),
-          //     northeast: const LatLng(31.31145554237395, 30.279652506167338),
-          //   ),
-          // ),
-        ),
-        // Positioned(
-        //   bottom: 16,
-        //   right: 16,
-        //   left: 16,
-        //   child: ElevatedButton(
-        //     onPressed: () {
-        //       googleMapController.animateCamera(
-        //         CameraUpdate.newLatLng(
-        //           const LatLng(30.054843970884242, 31.20276717469177),
-        //         ),
-        //       );
-        //     },
-        //     child: const Text("Change Location"),
-        //   ),
-        // ),
-      ],
+    return GoogleMap(
+      markers: markers,
+      zoomControlsEnabled: false,
+      style: mapStyle,
+      onMapCreated: (controller) {
+        googleMapController = controller;
+      },
+      initialCameraPosition: initialCameraPosition,
     );
   }
 
-  void initMarkers() async {
-    var customMarkerIcon = BitmapDescriptor.bytes(
-      await resizeMarkerIcon("assets/images/newMarker.jpg", 70),
-    );
-    var markersPlaces = places.map((place) {
-      return Marker(
-        icon: customMarkerIcon,
-        markerId: MarkerId(place.id.toString()),
-        position: place.latLng,
-        infoWindow: InfoWindow(title: place.name),
+  void updateMyLocation() async {
+    await locationService.checkAndRequestLocationService();
+    bool ispermissionEnabled =
+        await locationService.checkAndRequestLocationPermission();
+    //that avoid calling getLocationData if the permission is not granted
+    if (ispermissionEnabled) {
+      locationService.getRealTimeLocationData(
+        (locationData) {
+          setMyLocationMarker(locationData);
+          setState(() {});
+          if (isFirstCall) {
+            googleMapController?.animateCamera(
+              CameraUpdate.newCameraPosition(
+                CameraPosition(
+                  target:
+                      LatLng(locationData.latitude!, locationData.longitude!),
+                  zoom: 15,
+                ),
+              ),
+            );
+            isFirstCall = false;
+          } else {
+            googleMapController?.animateCamera(
+              CameraUpdate.newLatLng(
+                LatLng(locationData.latitude!, locationData.longitude!),
+              ),
+            );
+          }
+        },
       );
-    }).toSet();
-    markers.addAll(markersPlaces);
-    // because custom icon take time the map is loaded before the icon is ready , we need to call setState to refresh the map
-    setState(() {});
+    }
+  }
+
+  void setMyLocationMarker(LocationData locationData) {
+    Marker myMarkerLocation = Marker(
+      markerId: const MarkerId('myLocation'),
+      position: LatLng(locationData.latitude!, locationData.longitude!),
+    );
+    markers.add(myMarkerLocation);
   }
 }
