@@ -21,7 +21,7 @@ class _CustomGoogleMapState extends State<CustomGoogleMap> {
   void initState() {
     initialCameraPosition = const CameraPosition(
         target: LatLng(31.212848665725318, 29.91916361124228), zoom: 1);
-    initMapStyle();
+    // initMapStyle();
     locationService = LocationService();
     updateMyLocation();
     super.initState();
@@ -38,7 +38,7 @@ class _CustomGoogleMapState extends State<CustomGoogleMap> {
     return GoogleMap(
       markers: markers,
       zoomControlsEnabled: false,
-      style: mapStyle,
+      // style: mapStyle,
       onMapCreated: (controller) {
         googleMapController = controller;
       },
